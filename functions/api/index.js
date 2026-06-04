@@ -3,27 +3,51 @@ const BACKEND = 'http://159.75.169.224:1235'
 
 export async function onRequest(context) {
   const { request } = context
-  const url = new URL(request.url)
 
-  // 拼接后端完整地址：/api/user/login → http://159.75.169.224:1235/api/user/login
+  // 处理 CORS 预检请求
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type,token',
+        'Access-Control-Max-Age': '86400',
+      },
+    })
+  }
+
+  const url = new URL(request.url)
   const targetUrl = BACKEND + url.pathname + url.search
+
+  // 构建请求头，透传原始请求的关键头部
+  const headers = new Headers()
+  const forwardHeaders = ['Content-Type', 'token', 'Accept', 'Authorization']
+  for (const key of forwardHeaders) {
+    const val = request.headers.get(key)
+    if (val) headers.set(key, val)
+  }
 
   const proxyRequest = new Request(targetUrl, {
     method: request.method,
-    headers: {
-      'Content-Type': request.headers.get('Content-Type') || 'application/json',
-      'token': request.headers.get('token') || '',
-    },
+    headers,
     body: request.body,
   })
 
-  const response = await fetch(proxyRequest)
+  try {
+    const response = await fetch(proxyRequest)
+    const newHeaders = new Headers(response.headers)
+    newHeaders.set('Access-Control-Allow-Origin', '*')
 
-  // 复制响应并添加 CORS 头
-  const newResponse = new Response(response.body, response)
-  newResponse.headers.set('Access-Control-Allow-Origin', '*')
-  newResponse.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
-  newResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type,token')
-
-  return newResponse
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: newHeaders,
+    })
+  } catch (err) {
+    return new Response(JSON.stringify({ error: 'Proxy error: ' + err.message }), {
+      status: 502,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
 }

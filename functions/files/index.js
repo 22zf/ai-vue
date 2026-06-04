@@ -4,19 +4,27 @@ const BACKEND = 'http://159.75.169.224:1235'
 export async function onRequest(context) {
   const { request } = context
   const url = new URL(request.url)
-
   const targetUrl = BACKEND + url.pathname + url.search
 
-  const proxyRequest = new Request(targetUrl, {
-    method: request.method,
-    headers: request.headers,
-    body: request.body,
-  })
+  try {
+    const response = await fetch(targetUrl, {
+      method: request.method,
+      headers: request.headers,
+      body: request.body,
+    })
 
-  const response = await fetch(proxyRequest)
+    const newHeaders = new Headers(response.headers)
+    newHeaders.set('Access-Control-Allow-Origin', '*')
 
-  const newResponse = new Response(response.body, response)
-  newResponse.headers.set('Access-Control-Allow-Origin', '*')
-
-  return newResponse
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: newHeaders,
+    })
+  } catch (err) {
+    return new Response(JSON.stringify({ error: 'Proxy error: ' + err.message }), {
+      status: 502,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
 }
