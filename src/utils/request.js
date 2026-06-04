@@ -1,12 +1,12 @@
 import axios from 'axios'
 import router from '@/router'
 import { ElMessage } from 'element-plus'
+
 const request = axios.create({
-  // EdgeOne 上通过源站规则转发，前端只走相对路径
   baseURL: '',
   timeout: 5000
 })
-// 请求拦截器
+
 request.interceptors.request.use(
   config => {
     const token = localStorage.getItem('token')
@@ -19,15 +19,13 @@ request.interceptors.request.use(
     return Promise.reject(error)
   }
 )
-// 响应拦截器
+
 request.interceptors.response.use(
   response => {
     const { data } = response
-    // 后端返回 { success: true, data: { token, userInfo } }
     if (data.success === true) {
       return data.data
     }
-    // token 过期或未登录
     if (data.code === '-1' || data.code === -1) {
       const msg = data.msg || data.message || ''
       if (msg.includes('登录') || msg.includes('token') || msg.includes('未登录')) {
@@ -38,7 +36,6 @@ request.interceptors.response.use(
       ElMessage.error(data.msg || data.message || '请求失败')
       return Promise.reject(data.msg || data.message || '请求失败')
     }
-    // 其他业务错误
     ElMessage.error(data.msg || data.message || '请求失败')
     return Promise.reject(data.msg || data.message || '请求失败')
   },
@@ -48,4 +45,3 @@ request.interceptors.response.use(
 )
 
 export default request
-
