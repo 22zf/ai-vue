@@ -58,7 +58,7 @@ export function createSession(data) {
 
 export function streamChat(sessionId, userMessage, onChunk, onDone) {
   const token = localStorage.getItem('token')
-  return fetch('http://159.75.169.224:1235/api/psychological-chat/stream', {
+  return fetch('/api/psychological-chat/stream', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
