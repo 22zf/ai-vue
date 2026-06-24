@@ -126,7 +126,7 @@ import { ref, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Monitor, ChatDotRound, Plus, Promotion } from '@element-plus/icons-vue'
-import { consultPage, consultMessages, createSession, streamChat, getSessionEmotion } from '@/api/admin'
+import { consultPage, consultMessages, createSession, streamChat, getSessionEmotion } from '@/api/chat'
 
 const router = useRouter()
 const inputText = ref('')
@@ -232,32 +232,27 @@ function sendMessage() {
 
   const aiMsg = { content: '', time: '刚刚' }
   messages.value.push(aiMsg)
+  const reactiveAiMsg = messages.value[messages.value.length - 1]
   streaming.value = true
 
   function doStream(sessionId) {
-    // 流式接口要求 session_ 前缀格式
     const streamId = String(sessionId).startsWith('session_') ? sessionId : 'session_' + sessionId
     streamChat(
       streamId,
       text,
       (chunk) => {
-        const text = chunk?.data?.content || chunk?.content || chunk?.text || chunk?.delta?.content || ''
-        aiMsg.content += text
+        const t = chunk?.data?.content || chunk?.content || chunk?.text || chunk?.delta?.content || ''
+        reactiveAiMsg.content += t
         scrollToBottom()
       },
       () => {
         streaming.value = false
-        if (!aiMsg.content) {
-          aiMsg.content = '感谢您的分享。'
+        if (!reactiveAiMsg.content) {
+          reactiveAiMsg.content = '感谢您的分享。'
         }
         fetchSessions()
       }
-    ).catch(() => {
-      streaming.value = false
-      if (!aiMsg.content) {
-        aiMsg.content = '网络异常，请稍后重试。'
-      }
-    })
+    )
   }
 
   if (currentSessionId.value) {

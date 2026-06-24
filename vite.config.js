@@ -24,6 +24,11 @@ export default defineConfig({
       '/files': {
         target: 'http://159.75.169.224:1235',
         changeOrigin: true
+      },
+      '/my-api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/my-api/, '/api')
       }
     }
   }

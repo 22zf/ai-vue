@@ -41,11 +41,11 @@ Vue 3 + Vite + Element Plus + Pinia + Vue Router + Axios + ECharts + WangEditor
    - 咨询记录查看（分页列表 + 会话详情对话框展示）
    - 情绪日志管理（条件搜索 + 分页表格 + AI 分析结果弹窗）
 
-4. **接口联调**：对接后端 RESTful API，处理分页、搜索、文件上传等业务逻辑，SSE 流式接口实现打字机效果的 AI 回复
+4. **后端接口开发**：搭建 Node.js + Express 服务端，实现会话管理、消息持久化（JSON 文件存储）、对接 DeepSeek 大模型 API。SSE 端点在服务端收集模型回复后逐字推送到客户端（60ms 间隔），确保前端流式读取不被合并。
 
 ## 项目亮点（面试时主动说的点）
 
-- **SSE 流式对话**：使用原生 Fetch + ReadableStream 实现 Server-Sent Events，逐字输出 AI 回复，提升对话体验
+- **SSE 流式对话**：使用 XHR + onreadystatechange（readyState === 3）实现真正的逐字流式输出，解决 Chrome 对 Fetch ReadableStream 的缓冲合并问题；同时修复 Vue 响应式追踪——push 到数组的对象需通过 proxy 引用才能触发 DOM 实时更新
 - **Axios 拦截器封装**：统一处理 token 注入、响应数据解包、错误码拦截，减少重复代码
 - **ECharts 数据可视化**：实现多维度数据看板，包含折线趋势图、柱状分布图、饼图占比分析
 - **富文本编辑器集成**：WangEditor 封装为独立组件，支持图片上传和内容编辑
@@ -73,7 +73,7 @@ Vue 3 + Vite + Element Plus + Pinia + Vue Router + Axios + ECharts + WangEditor
 > A: 二次封装了图表组件，通过 option 配置驱动，后端返回数据后动态更新 option，实现响应式图表。
 
 **Q: 项目中遇到的最大难点是什么？**
-> A: SSE 流式对话的实现。一开始用的轮询，体验不好，后来查了文档用 Fetch + ReadableStream 实现了逐字输出效果。
+> A: SSE 流式对话的逐字输出。一开始用 Fetch + ReadableStream，发现 Chrome 会合并 TCP 分块导致一次弹完。改用 XHR 的 onreadystatechange 监听 readyState === 3，才真正实现了每个 SSE data 事件独立接收。还碰到了一个 Vue 响应式的坑：push 进数组的对象需要通过 `messages.value[index]` 取 reactive proxy 才能触发视图更新。
 
 **Q: 为什么不直接用 Vue CLI 而用 Vite？**
 > A: Vite 开发启动快，热更新快，对 Vue 3 支持更好，社区也更推荐。
@@ -82,8 +82,9 @@ Vue 3 + Vite + Element Plus + Pinia + Vue Router + Axios + ECharts + WangEditor
 
 ### 注意事项（面试前看看）
 
-1. 不要主动提"AI 大模型"的具体实现，面试官如果问就说是后端对接的，你只负责前端展示和流式输出
+1. 提到 SSE 流式时可以说"用 XHR readyState 3 解决的 Chrome 缓冲问题"，展示问题定位能力和浏览器原理理解
 2. 提到 ECharts 时说"封装了通用图表组件"，不要说"写了很复杂的配置"
 3. 富文本编辑器说"WangEditor 封装成组件"即可，不要展开讲具体实现细节
 4. 分页、搜索这些基础功能简单带过，重点放在 SSE 和 ECharts 上
 5. 如果被问到性能优化，可以说"路由懒加载 + 按需引入 Element Plus"，这两点确实做了
+6. 后端可以提"同时开发了 Node.js 后端，对接了 DeepSeek 大模型 API"，展示全栈能力
